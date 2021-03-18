@@ -10,10 +10,9 @@ Solving the Vehicle Routing Problem (VRP) with multiple constraints using Geneti
 # Them cac thu vien neu can
 import random
 from random import randrange
-from time import time
 import math
-import multiprocessing 
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 """
 Data structure to store information about each city.
@@ -139,7 +138,7 @@ def assign(file_input, file_output):
     # Depot is the special city with volume and weight 0.
     depot = City(lines[0], volume = 0, weight = 0)
     noOfCities = lines[1][0]
-    noOfTrucks = lines[1][1] 
+    noOfTrucks = lines[1][1]
 
     cities = [depot] + [City((lines[i][0], lines[i][1]), lines[i][2], lines[i][3]) for i in range(2, len(lines))]
     trucks = ['truck' for i in range(0, noOfTrucks - 1)]
@@ -319,9 +318,35 @@ def assign(file_input, file_output):
             sol.append(genetic_algo(Genetic = PROBLEM, selectionSize = 2, noOfGens = 100, populationSize = 25, crossRatio = 0.9, mutateProb= 0.01))
         return min(sol, key = lambda t: t[1])
     
-    sol = VRP(noOfInstances = 1000)
+    sol = VRP(noOfInstances = 10)
 
     # write output
+    plt.figure()
+    ax = plt.gca()
+    ax.set_xlim(0, 20)
+    ax.set_ylim(0, 20)
+    major_ticks = np.arange(0, 20, 1)
+    ax.set_xticks(major_ticks)
+    ax.set_yticks(major_ticks)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(which = 'major', alpha = 0.2)
+    plt.scatter(cities[0].location[0], cities[0].location[1], marker='s')
+    for truck in sol[0]:
+        #cord = list(zip(*[cities[idx + 1].location for idx in truck]))
+        #plt.scatter(cord[0], cord[1])
+        #plt.legend(str(idx))
+        cord = [cities[0].location] + [cities[idx + 1].location for idx in truck]
+        cord2 = list(zip(*cord))
+        sc = plt.scatter(cord2[0][1:], cord2[1][1:])
+        #print(sc)
+        
+        for idx in range(len(cord) - 1):
+            plt.arrow(cord[idx][0], cord[idx][1], cord[idx + 1][0] - cord[idx][0], cord[idx + 1][1] - cord[idx][1], length_includes_head = True, head_width = 0.4, head_length = 0.4, width = 0.1)
+
+
+    plt.show()
+
     
     with open(file_output, "w") as f:
         for truck in sol[0]:
@@ -334,11 +359,13 @@ def assign(file_input, file_output):
 
 if __name__ == '__main__':
 
-    processes = []
-    for i in range(0, 10):
-        p = multiprocessing.Process(target = assign, args=('input.txt', 'output.txt',))
-        processes.append(p)
-        p.start()
+    # processes = []
+    # for i in range(0, 10):
+    #     p = multiprocessing.Process(target = assign, args=('input.txt', 'output.txt',))
+    #     processes.append(p)
+    #     p.start()
 
-    for process in processes:
-        process.join()
+    # for process in processes:
+    #     process.join()
+
+    assign('input.txt', 'output.txt')
