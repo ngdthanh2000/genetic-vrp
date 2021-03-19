@@ -82,3 +82,9 @@ def VRP(noOfInstances):
 
     return min(sol, key = lambda t: t[1])
 ```
+
+# Examples
+
+![Testcase 1](https://github.com/ngdthanh2000/genetic-vrp/blob/main/images/1.png?raw=true)
+![Testcase 10](https://github.com/ngdthanh2000/genetic-vrp/blob/main/images/10.png?raw=true)
+![Testcase 20](https://github.com/ngdthanh2000/genetic-vrp/blob/main/images/20.png?raw=true)
