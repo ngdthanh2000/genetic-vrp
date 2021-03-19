@@ -1,18 +1,19 @@
+#!/usr/bin/env python
+
 """
-Team members:
-
-1. Nguyen Lam Khanh Quynh - 1813776
-2. Nguyen Dinh Thanh - 1813968
-
 Solving the Vehicle Routing Problem (VRP) with multiple constraints using Genetic Algorithm.
 """
 
-# Them cac thu vien neu can
 import random
 from random import randrange
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import colorsys
+import os
+
+__author__ = "Thanh Nguyen, Quynh Nguyen"
+__email__ = "thanh.nguyen.it.k18@hcmut.edu.vn"
 
 """
 Data structure to store information about each city.
@@ -27,7 +28,6 @@ class City():
         self.location = location
         self.volume = volume
         self.weight = weight
-
 
 """
 Class to represent the problems to be solved by Genetic Algorithm.
@@ -129,12 +129,16 @@ class Genetic():
         return newChro
 
 
-def assign(file_input, file_output):
-    # read input
+def assign(file_input, file_output, no_instance):
 
-    f = open(file_input, "r")
-    lines = [line.rstrip('\n') for line in f]
+    testcaseNo = file_input.split('\\')[-1].split('.')[0]
+    print(testcaseNo)
+    
+    with open(file_input, "r") as f:
+        lines = [line.rstrip('\n') for line in f]
+    
     lines = [tuple(map(int, line.split(" "))) for line in lines]
+    
     # Depot is the special city with volume and weight 0.
     depot = City(lines[0], volume = 0, weight = 0)
     noOfCities = lines[1][0]
@@ -143,15 +147,10 @@ def assign(file_input, file_output):
     cities = [depot] + [City((lines[i][0], lines[i][1]), lines[i][2], lines[i][3]) for i in range(2, len(lines))]
     trucks = ['truck' for i in range(0, noOfTrucks - 1)]
 
-
     #The distances between locations are calculated using Euclid distance, 
     # in which the distance between two points, (x1, y1) and (x2, y2) is defined to be sqrt((x1 - x2)^2 + (y1 - y2)^2).
     dist = lambda p1, p2: math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
     distance_matrix = [[dist(p1, p2) for p2 in [city.location for city in cities]] for p1 in [city.location for city in cities]]
-
-    f.close()
-
-    # run algorithm
 
     """
     Implement the functions that the Genetic Algorithm needs to work.
@@ -204,8 +203,6 @@ def assign(file_input, file_output):
             return [generateChro() for _ in range(populationSize)]   
 
 
-
-        
         def newGeneration(Genetic, selectionSize, population, noOfParents, noOfDirects, mutateProb):
 
             def selection(Genetic, population, selectionSize, n):
@@ -318,54 +315,69 @@ def assign(file_input, file_output):
             sol.append(genetic_algo(Genetic = PROBLEM, selectionSize = 2, noOfGens = 100, populationSize = 25, crossRatio = 0.9, mutateProb= 0.01))
         return min(sol, key = lambda t: t[1])
     
-    sol = VRP(noOfInstances = 10)
+    # Customize the number of instances here
+    sol = VRP(noOfInstances = no_instance)
 
-    # write output
-    plt.figure()
+    def get_colors(num_colors):
+        colors=[]
+        for i in np.arange(0., 360., 360. / num_colors):
+            hue = i/360.
+            lightness = (50 + np.random.rand() * 10)/100.
+            saturation = (90 + np.random.rand() * 10)/100.
+            colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+        return colors
+
+    # Plot the result (i.e. routing graph)
+
+    fig = plt.figure(figsize= (10, 10))
+    plt.title("Testcase {}\nNumber of instances: {}. Fitness: {}".format(testcaseNo, no_instance, sol[1]))
     ax = plt.gca()
-    ax.set_xlim(0, 20)
-    ax.set_ylim(0, 20)
-    major_ticks = np.arange(0, 20, 1)
+    maxh = max([cities[i].location[0] for i in range(len(cities))])
+    maxv = max([cities[i].location[1] for i in range(len(cities))])
+    maxt = max(maxh, maxv)
+    ax.set_xlim(-0.5, float(maxt) + .5)
+    ax.set_ylim(-0.5, float(maxt) + .5)
+    major_ticks = np.arange(0, maxt + 1, 1)
     ax.set_xticks(major_ticks)
     ax.set_yticks(major_ticks)
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
     ax.grid(which = 'major', alpha = 0.2)
-    plt.scatter(cities[0].location[0], cities[0].location[1], marker='s')
+    plt.scatter(cities[0].location[0], cities[0].location[1], marker='s', s = 200, color = 'black')
+    i = 0
+    arrowList = []
+    vList = np.arange(1, len(sol[0]) + 1, 1).astype(str)
+    colorList = get_colors(len(sol[0]))
     for truck in sol[0]:
-        #cord = list(zip(*[cities[idx + 1].location for idx in truck]))
-        #plt.scatter(cord[0], cord[1])
-        #plt.legend(str(idx))
         cord = [cities[0].location] + [cities[idx + 1].location for idx in truck]
         cord2 = list(zip(*cord))
-        sc = plt.scatter(cord2[0][1:], cord2[1][1:])
-        #print(sc)
-        
+        sc = plt.scatter(cord2[0][1:], cord2[1][1:], s = 50, color = colorList[i])
         for idx in range(len(cord) - 1):
-            plt.arrow(cord[idx][0], cord[idx][1], cord[idx + 1][0] - cord[idx][0], cord[idx + 1][1] - cord[idx][1], length_includes_head = True, head_width = 0.4, head_length = 0.4, width = 0.1)
+            arrow = (plt.arrow(cord[idx][0], cord[idx][1], cord[idx + 1][0] - cord[idx][0], cord[idx + 1][1] - cord[idx][1],
+                    length_includes_head = True, 
+                    head_width = 0.3, 
+                    head_length = 0.4, 
+                    width = 0.05, color = colorList[i],
+                    label = vList[i]))
 
-
-    plt.show()
-
+            if idx == 0:
+                arrowList.append(arrow)
+        i += 1
     
+    fig.legend(arrowList, [arrow.get_label() for arrow in arrowList])
+
+    outpath  = os.path.join(os.path.dirname(__file__), 'images\\{}.png'.format(testcaseNo))
+    plt.savefig(outpath)
+    plt.close()
+
+    # Write the result to file
     with open(file_output, "w") as f:
         for truck in sol[0]:
             f.write(' '.join(map(str, truck)) + '\n')
         f.write(str(sol[1]))
 
     return
-    
 
 
 if __name__ == '__main__':
-
-    # processes = []
-    # for i in range(0, 10):
-    #     p = multiprocessing.Process(target = assign, args=('input.txt', 'output.txt',))
-    #     processes.append(p)
-    #     p.start()
-
-    # for process in processes:
-    #     process.join()
-
-    assign('input.txt', 'output.txt')
+    for i in [1,10,20]:
+        inp = os.path.join(os.path.dirname(__file__), 'input\\{}.txt'.format(i))
+        assign(inp, 'output.txt', no_instance= 100)
